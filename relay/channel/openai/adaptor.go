@@ -227,9 +227,6 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, header *http.Header, info *
 }
 
 func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeneralOpenAIRequest) (any, error) {
-	// [VERSION-MARKER] This build includes the blacklist fix for gpt-5.4-high
-	common.SysError("[VERSION-MARKER] ConvertOpenAIRequest with blacklist fix - Build 20250502")
-	
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
@@ -331,19 +328,13 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		}
 
 		// 转换模型推理力度后缀
-		common.SysError(fmt.Sprintf("[BLACKLIST-CHECK] OriginModelName=%s, UpstreamModelName=%s", info.OriginModelName, info.UpstreamModelName))
-		common.SysError(fmt.Sprintf("[BLACKLIST-CHECK] ShouldPreserveThinkingSuffix=%v", model_setting.ShouldPreserveThinkingSuffix(info.OriginModelName)))
 		if !model_setting.ShouldPreserveThinkingSuffix(info.OriginModelName) {
-			common.SysLog(fmt.Sprintf("[DEBUG] Model %s not in blacklist, converting suffix...", info.OriginModelName))
 			effort, originModel := reasoning.ParseOpenAIReasoningEffortFromModelSuffix(info.UpstreamModelName)
 			if effort != "" {
-				common.SysLog(fmt.Sprintf("[DEBUG] Converted: effort=%s, originModel=%s", effort, originModel))
 				request.ReasoningEffort = effort
 				info.UpstreamModelName = originModel
 				request.Model = originModel
 			}
-		} else {
-			common.SysLog(fmt.Sprintf("[DEBUG] Model %s in blacklist, skipping conversion", info.OriginModelName))
 		}
 
 		info.ReasoningEffort = request.ReasoningEffort

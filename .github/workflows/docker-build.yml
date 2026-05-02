@@ -84,10 +84,8 @@ jobs:
             kangaroo117/new-api:${{ env.TAG }}-${{ matrix.arch }}
             kangaroo117/new-api:latest-${{ matrix.arch }}
           labels: ${{ steps.meta.outputs.labels }}
-          # 临时禁用缓存以确保代码修改被编译
-          no-cache: true
-          # cache-from: type=gha
-          # cache-to: type=gha,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           provenance: mode=max
           sbom: true
 
