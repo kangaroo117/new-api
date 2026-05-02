@@ -328,11 +328,18 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		}
 
 		// 转换模型推理力度后缀
-		effort, originModel := reasoning.ParseOpenAIReasoningEffortFromModelSuffix(info.UpstreamModelName)
-		if effort != "" {
-			request.ReasoningEffort = effort
-			info.UpstreamModelName = originModel
-			request.Model = originModel
+		common.SysLog(fmt.Sprintf("[DEBUG] OriginModelName=%s, UpstreamModelName=%s, checking blacklist...", info.OriginModelName, info.UpstreamModelName))
+		if !model_setting.ShouldPreserveThinkingSuffix(info.OriginModelName) {
+			common.SysLog(fmt.Sprintf("[DEBUG] Model %s not in blacklist, converting suffix...", info.OriginModelName))
+			effort, originModel := reasoning.ParseOpenAIReasoningEffortFromModelSuffix(info.UpstreamModelName)
+			if effort != "" {
+				common.SysLog(fmt.Sprintf("[DEBUG] Converted: effort=%s, originModel=%s", effort, originModel))
+				request.ReasoningEffort = effort
+				info.UpstreamModelName = originModel
+				request.Model = originModel
+			}
+		} else {
+			common.SysLog(fmt.Sprintf("[DEBUG] Model %s in blacklist, skipping conversion", info.OriginModelName))
 		}
 
 		info.ReasoningEffort = request.ReasoningEffort
@@ -573,16 +580,18 @@ func detectImageMimeType(filename string) string {
 
 func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
 	//  转换模型推理力度后缀
-	effort, originModel := reasoning.ParseOpenAIReasoningEffortFromModelSuffix(request.Model)
-	if effort != "" {
-		if request.Reasoning == nil {
-			request.Reasoning = &dto.Reasoning{
-				Effort: effort,
+	if !model_setting.ShouldPreserveThinkingSuffix(request.Model) {
+		effort, originModel := reasoning.ParseOpenAIReasoningEffortFromModelSuffix(request.Model)
+		if effort != "" {
+			if request.Reasoning == nil {
+				request.Reasoning = &dto.Reasoning{
+					Effort: effort,
+				}
+			} else {
+				request.Reasoning.Effort = effort
 			}
-		} else {
-			request.Reasoning.Effort = effort
+			request.Model = originModel
 		}
-		request.Model = originModel
 	}
 	if info != nil && request.Reasoning != nil && request.Reasoning.Effort != "" {
 		info.ReasoningEffort = request.Reasoning.Effort
