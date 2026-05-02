@@ -47,6 +47,9 @@ var classicBuildFS embed.FS
 var classicIndexPage []byte
 
 func main() {
+	// [VERSION-MARKER] Build with blacklist fix for gpt-5.4-high - 20250502
+	fmt.Println("[VERSION-MARKER] Starting new-api with blacklist fix for gpt-5.4-high model conversion")
+	
 	startTime := time.Now()
 
 	err := InitResources()
